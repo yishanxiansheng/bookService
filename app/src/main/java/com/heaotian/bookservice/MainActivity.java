@@ -15,16 +15,36 @@ import android.view.View;
 import com.heaotian.bookservice.bean.Book;
 
 public class MainActivity extends AppCompatActivity {
-    private IBookManager bookManager;
+
+    /**
+     * 远程书籍管理类
+     */
+    private IBookManager mBookManager;
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            bookManager = IBookManager.Stub.asInterface(iBinder);
+            try {
+                mBookManager = IBookManager.Stub.asInterface(iBinder);
+                mBookManager.registerListener(mBookArrivedlistener);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
 
+        }
+    };
+
+    /**
+     * 观察者，观察有没有新书到
+     */
+    private INewBookArrivedListener mBookArrivedlistener = new INewBookArrivedListener.Stub() {
+        @Override
+        public void onNewBookArriced(Book book) throws RemoteException {
+            //运行在客户端的Binder线程，所以不能访问UI相关的内容
+            Log.d("heshufan",book.getName());
         }
     };
 
@@ -41,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 try {
-                    bookManager.addBook(new Book("android"));
+                    mBookManager.addBook(new Book("android"));
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
@@ -52,11 +72,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 try {
-                    Log.d("books_size", bookManager.getBookList() + "");
+                    Log.d("books_size", mBookManager.getBookList().toString() + "");
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        unbindService(mConnection);
+        if (mBookManager !=null && mBookManager.asBinder().isBinderAlive()){
+            try {
+                mBookManager.unRegisterListener(mBookArrivedlistener);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+        super.onDestroy();
     }
 }
