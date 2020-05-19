@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.util.EventLogTags;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -19,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class BookMangerService extends Service {
 
+    public static final String TAG = "BookMangerService";
     /**
      * 具有线程同步功能的List,防止多个客户端同时访问时产生的同步问题
      */
@@ -44,7 +47,9 @@ public class BookMangerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.d(TAG, "onCreate: ");
         mBooks.add(new Book("java讲义"));
+        new Thread(new ServiceWorker()).start();
     }
 
     @Override
@@ -87,8 +92,9 @@ public class BookMangerService extends Service {
         @Override
         public void run() {
             try {
-                while (isServiceDestroyed.get()) {
-                    Thread.sleep(50000);
+                while (!isServiceDestroyed.get()) {
+                    Log.d(TAG, "run: ");
+                    Thread.sleep(5000);
                     Book book = new Book("书籍");
                     onNewBookArrived(book);
                 }
@@ -106,7 +112,8 @@ public class BookMangerService extends Service {
      */
     private void onNewBookArrived(Book book) {
         mBooks.add(book);
-        for (int i = 0; i < mListeners.beginBroadcast(); i++) {
+        int N = mListeners.beginBroadcast();
+        for (int i = 0; i < N; i++) {
             try {
                 mListeners.getBroadcastItem(i).onNewBookArriced(book);
             } catch (RemoteException e) {

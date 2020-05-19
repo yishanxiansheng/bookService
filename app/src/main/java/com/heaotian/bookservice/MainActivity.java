@@ -15,7 +15,7 @@ import android.view.View;
 import com.heaotian.bookservice.bean.Book;
 
 public class MainActivity extends AppCompatActivity {
-
+    public static final String TAG = "MainActivity";
     /**
      * 远程书籍管理类
      */
@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onNewBookArriced(Book book) throws RemoteException {
             //运行在客户端的Binder线程，所以不能访问UI相关的内容
-            Log.d("heshufan",book.getName());
+            Log.d(TAG, "onNewBookArriced: " + book.getName());
         }
     };
 
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         unbindService(mConnection);
-        if (mBookManager !=null && mBookManager.asBinder().isBinderAlive()){
+        if (mBookManager != null && mBookManager.asBinder().isBinderAlive()) {
             try {
                 mBookManager.unRegisterListener(mBookArrivedlistener);
             } catch (RemoteException e) {
